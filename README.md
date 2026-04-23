@@ -1,4 +1,4 @@
-# App de Gestão Financeira — TCC 3º Ano
+# Bolso Inteligente — TCC 3º Ano
 
 Aplicativo mobile desenvolvido como Trabalho de Conclusão de Curso (TCC), com o objetivo de ajudar usuários a controlarem suas finanças pessoais de forma simples e eficiente.
 
