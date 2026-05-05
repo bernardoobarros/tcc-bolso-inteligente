@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,21 +10,98 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAplicativo } from '@/contextos/aplicativo-contexto';
+import type { CategoriaDespesa } from '@/tipos/aplicativo';
+import {
+  converterTextoEmData,
+  converterTextoEmValor,
+  formatarDataCurta,
+  formatarMoeda,
+} from '@/utils/financeiro';
 
 const categorias = [
-  { titulo: 'ALIMENTAÇÃO', icone: 'restaurant-outline' as const },
-  { titulo: 'TRANSPORTE', icone: 'bus-outline' as const },
-  { titulo: 'COMPRAS', icone: 'bag-handle-outline' as const },
-  { titulo: 'OUTROS', icone: 'apps-outline' as const },
+  { titulo: 'Alimentação' as CategoriaDespesa, icone: 'restaurant-outline' as const },
+  { titulo: 'Transporte' as CategoriaDespesa, icone: 'bus-outline' as const },
+  { titulo: 'Compras' as CategoriaDespesa, icone: 'bag-handle-outline' as const },
+  { titulo: 'Outros' as CategoriaDespesa, icone: 'apps-outline' as const },
 ];
 
+type ErrosFormulario = {
+  valor?: string;
+  descricao?: string;
+  data?: string;
+  conta?: string;
+};
+
 export default function TelaNovaDespesa() {
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState('ALIMENTAÇÃO');
+  const { adicionarDespesa } = useAplicativo();
+  const [categoriaSelecionada, setCategoriaSelecionada] =
+    useState<CategoriaDespesa>('Alimentação');
   const [repetirDespesa, setRepetirDespesa] = useState(false);
+  const [valorTexto, setValorTexto] = useState('');
+  const [descricao, setDescricao] = useState('');
+  const [dataTexto, setDataTexto] = useState(formatarDataCurta(Date.now()));
+  const [contaPagamento, setContaPagamento] = useState('Carteira Principal');
+  const [erros, setErros] = useState<ErrosFormulario>({});
+
+  const valorNumerico = useMemo(() => converterTextoEmValor(valorTexto), [valorTexto]);
+
+  function limparFormulario() {
+    setCategoriaSelecionada('Alimentação');
+    setRepetirDespesa(false);
+    setValorTexto('');
+    setDescricao('');
+    setDataTexto(formatarDataCurta(Date.now()));
+    setContaPagamento('Carteira Principal');
+    setErros({});
+  }
+
+  function salvarDespesa() {
+    const dataConvertida = converterTextoEmData(dataTexto);
+    const novosErros: ErrosFormulario = {};
+
+    if (valorNumerico <= 0) {
+      novosErros.valor = 'Informe um valor maior que zero.';
+    }
+
+    if (descricao.trim().length < 3) {
+      novosErros.descricao = 'Descreva a despesa com pelo menos 3 caracteres.';
+    }
+
+    if (!dataConvertida) {
+      novosErros.data = 'Use a data no formato dd/mm/aaaa.';
+    }
+
+    if (contaPagamento.trim().length < 3) {
+      novosErros.conta = 'Informe a conta de pagamento.';
+    }
+
+    setErros(novosErros);
+
+    if (Object.keys(novosErros).length > 0 || !dataConvertida) {
+      return;
+    }
+
+    adicionarDespesa({
+      descricao: descricao.trim(),
+      categoria: categoriaSelecionada,
+      valor: valorNumerico,
+      data: dataConvertida,
+      contaPagamento: contaPagamento.trim(),
+      repetir: repetirDespesa,
+    });
+
+    router.back();
+  }
 
   return (
-    <SafeAreaView style={estilos.areaSegura}>
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+    <SafeAreaView edges={['top', 'bottom']} style={estilos.areaSegura}>
+      <ScrollView
+        contentContainerStyle={estilos.conteudo}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <View style={estilos.cabecalho}>
           <Pressable onPress={() => router.back()} style={estilos.botaoVoltar}>
             <Ionicons color="#202020" name="close" size={18} />
@@ -37,18 +113,24 @@ export default function TelaNovaDespesa() {
         </View>
 
         <Text style={estilos.rotuloTopo}>VALOR DA TRANSAÇÃO</Text>
-        <View style={estilos.areaValor}>
-          <Text style={estilos.moeda}>R$</Text>
-          <Text style={estilos.valor}>0,00</Text>
-        </View>
+        <TextInput
+          keyboardType="decimal-pad"
+          onChangeText={setValorTexto}
+          placeholder="0,00"
+          placeholderTextColor="#9CA3AF"
+          style={[estilos.campoValor, erros.valor && estilos.campoComErro]}
+          value={valorTexto}
+        />
+        <Text style={estilos.valorPreview}>{formatarMoeda(valorNumerico || 0)}</Text>
+        {erros.valor ? <Text style={estilos.textoErro}>{erros.valor}</Text> : null}
 
         <View style={estilos.seletorTipo}>
-          <Pressable style={estilos.pilulaTipo}>
+          <View style={estilos.pilulaTipo}>
             <Text style={estilos.textoTipo}>BRL</Text>
-          </Pressable>
-          <Pressable style={[estilos.pilulaTipo, estilos.pilulaTipoAtiva]}>
+          </View>
+          <View style={[estilos.pilulaTipo, estilos.pilulaTipoAtiva]}>
             <Text style={estilos.textoTipoAtivo}>Despesa</Text>
-          </Pressable>
+          </View>
         </View>
 
         <Text style={estilos.rotuloSecao}>Categoria</Text>
@@ -60,20 +142,14 @@ export default function TelaNovaDespesa() {
               <Pressable
                 key={categoria.titulo}
                 onPress={() => setCategoriaSelecionada(categoria.titulo)}
-                style={[
-                  estilos.itemCategoria,
-                  estaAtiva && estilos.itemCategoriaAtivo,
-                ]}>
+                style={[estilos.itemCategoria, estaAtiva && estilos.itemCategoriaAtivo]}>
                 <Ionicons
                   color={estaAtiva ? '#6200EE' : '#71717A'}
                   name={categoria.icone}
                   size={18}
                 />
                 <Text
-                  style={[
-                    estilos.textoCategoria,
-                    estaAtiva && estilos.textoCategoriaAtivo,
-                  ]}>
+                  style={[estilos.textoCategoria, estaAtiva && estilos.textoCategoriaAtivo]}>
                   {categoria.titulo}
                 </Text>
               </Pressable>
@@ -83,29 +159,41 @@ export default function TelaNovaDespesa() {
 
         <Text style={estilos.rotuloSecao}>DESCRIÇÃO</Text>
         <TextInput
-          placeholder="Ex: Almoço Executivo"
+          onChangeText={setDescricao}
+          placeholder="Ex: Almoço executivo"
           placeholderTextColor="#9CA3AF"
-          style={estilos.campoTexto}
+          style={[estilos.campoTexto, erros.descricao && estilos.campoComErro]}
+          value={descricao}
         />
+        {erros.descricao ? <Text style={estilos.textoErro}>{erros.descricao}</Text> : null}
 
         <Text style={estilos.rotuloSecao}>DATA</Text>
-        <View style={estilos.campoComIcone}>
-          <Text style={estilos.textoCampo}>05/24/2024</Text>
-          <Ionicons color="#71717A" name="calendar-outline" size={18} />
-        </View>
+        <TextInput
+          keyboardType="number-pad"
+          onChangeText={setDataTexto}
+          placeholder="dd/mm/aaaa"
+          placeholderTextColor="#9CA3AF"
+          style={[estilos.campoTexto, erros.data && estilos.campoComErro]}
+          value={dataTexto}
+        />
+        {erros.data ? <Text style={estilos.textoErro}>{erros.data}</Text> : null}
 
         <Text style={estilos.rotuloSecao}>CONTA DE PAGAMENTO</Text>
-        <View style={estilos.campoComIcone}>
-          <Text style={estilos.textoCampo}>Carteira Principal</Text>
-          <Ionicons color="#71717A" name="chevron-down" size={18} />
-        </View>
+        <TextInput
+          onChangeText={setContaPagamento}
+          placeholder="Carteira Principal"
+          placeholderTextColor="#9CA3AF"
+          style={[estilos.campoTexto, erros.conta && estilos.campoComErro]}
+          value={contaPagamento}
+        />
+        {erros.conta ? <Text style={estilos.textoErro}>{erros.conta}</Text> : null}
 
         <View style={estilos.cartaoLinha}>
           <View style={estilos.linhaEsquerda}>
             <View style={estilos.iconeLinha}>
               <Ionicons color="#6200EE" name="repeat-outline" size={16} />
             </View>
-            <View>
+            <View style={estilos.textosCartaoLinha}>
               <Text style={estilos.tituloLinha}>Repetir despesa</Text>
               <Text style={estilos.subtituloLinha}>Mensal, quinzenal...</Text>
             </View>
@@ -124,7 +212,7 @@ export default function TelaNovaDespesa() {
             <View style={[estilos.iconeLinha, estilos.iconeLinhaLaranja]}>
               <Ionicons color="#C2410C" name="receipt-outline" size={16} />
             </View>
-            <View>
+            <View style={estilos.textosCartaoLinha}>
               <Text style={estilos.tituloLinha}>Anexar comprovante</Text>
               <Text style={estilos.subtituloLinha}>PDF, JPG ou PNG</Text>
             </View>
@@ -132,11 +220,11 @@ export default function TelaNovaDespesa() {
           <Text style={estilos.textoAcaoLinha}>ADICIONAR</Text>
         </View>
 
-        <Pressable style={estilos.botaoPrimario}>
+        <Pressable onPress={salvarDespesa} style={estilos.botaoPrimario}>
           <Text style={estilos.textoBotaoPrimario}>SALVAR DESPESA</Text>
         </Pressable>
 
-        <Pressable style={estilos.botaoSecundario}>
+        <Pressable onPress={limparFormulario} style={estilos.botaoSecundario}>
           <Text style={estilos.textoBotaoSecundario}>LIMPAR FORMULÁRIO</Text>
         </Pressable>
       </ScrollView>
@@ -150,9 +238,10 @@ const estilos = StyleSheet.create({
     backgroundColor: '#F9F9FB',
   },
   conteudo: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 32,
+    flexGrow: 1,
   },
   cabecalho: {
     flexDirection: 'row',
@@ -188,23 +277,34 @@ const estilos = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
-  areaValor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  moeda: {
-    fontSize: 30,
-    lineHeight: 34,
+  campoValor: {
+    minHeight: 54,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#202020',
+    marginBottom: 8,
   },
-  valor: {
-    fontSize: 52,
-    lineHeight: 58,
+  valorPreview: {
+    textAlign: 'center',
+    fontSize: 34,
+    lineHeight: 40,
     fontWeight: '800',
     color: '#202020',
+    marginBottom: 10,
+  },
+  campoComErro: {
+    borderWidth: 1,
+    borderColor: '#DC2626',
+  },
+  textoErro: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#DC2626',
+    marginBottom: 12,
   },
   seletorTipo: {
     alignSelf: 'center',
@@ -280,22 +380,7 @@ const estilos = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 13,
     color: '#202020',
-    marginBottom: 16,
-  },
-  campoComIcone: {
-    minHeight: 46,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  textoCampo: {
-    fontSize: 13,
-    lineHeight: 16,
-    color: '#202020',
+    marginBottom: 6,
   },
   cartaoLinha: {
     minHeight: 58,
@@ -311,6 +396,9 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+  },
+  textosCartaoLinha: {
     flex: 1,
   },
   iconeLinha: {
@@ -340,6 +428,7 @@ const estilos = StyleSheet.create({
     lineHeight: 14,
     fontWeight: '700',
     color: '#6200EE',
+    marginLeft: 12,
   },
   botaoPrimario: {
     height: 48,

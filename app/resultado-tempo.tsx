@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CabecalhoAplicativo } from '@/components/aplicativo/cabecalho-aplicativo';
 import { TelaAplicativo } from '@/components/aplicativo/tela-aplicativo';
+import { formatarMoeda } from '@/utils/financeiro';
 
 export default function TelaResultadoTempo() {
   const parametros = useLocalSearchParams<{
@@ -14,8 +16,10 @@ export default function TelaResultadoTempo() {
   const valorHora = Number(parametros.valorHora ?? '0');
   const totalHoras = valorHora > 0 ? valorProduto / valorHora : 0;
   const horasInteiras = Math.floor(totalHoras);
-  const minutos = Math.round((totalHoras - horasInteiras) * 60);
-  const textoHoras = `${String(horasInteiras).padStart(2, '0')}:${String(minutos).padStart(2, '0')}h`;
+  const minutosAjustados = Math.round((totalHoras - horasInteiras) * 60);
+  const horasExibidas = minutosAjustados === 60 ? horasInteiras + 1 : horasInteiras;
+  const minutosExibidos = minutosAjustados === 60 ? 0 : minutosAjustados;
+  const textoHoras = `${String(horasExibidas).padStart(2, '0')}:${String(minutosExibidos).padStart(2, '0')}h`;
 
   return (
     <TelaAplicativo abaAtiva="tempo">
@@ -36,7 +40,7 @@ export default function TelaResultadoTempo() {
 
       <View style={estilos.cartaoSecundario}>
         <View style={estilos.linhaCabecalhoSecundario}>
-          <Text style={estilos.iconeSecundario}>🛍️</Text>
+          <Ionicons color="#6200EE" name="cart-outline" size={14} />
           <Text style={estilos.rotuloSecundario}>VALOR DO PRODUTO</Text>
         </View>
         <Text style={estilos.valorSecundario}>{formatarMoeda(valorProduto)}</Text>
@@ -44,7 +48,7 @@ export default function TelaResultadoTempo() {
 
       <View style={estilos.cartaoSecundario}>
         <View style={estilos.linhaCabecalhoSecundario}>
-          <Text style={estilos.iconeSecundario}>💳</Text>
+          <Ionicons color="#6200EE" name="wallet-outline" size={14} />
           <Text style={estilos.rotuloSecundario}>VALOR DA SUA HORA</Text>
         </View>
         <Text style={estilos.valorSecundario}>{formatarMoeda(valorHora)}</Text>
@@ -59,20 +63,13 @@ export default function TelaResultadoTempo() {
       </Pressable>
 
       <View style={estilos.cartaoDica}>
-        <Text style={estilos.iconeDica}>💡</Text>
+        <Ionicons color="#6200EE" name="bulb-outline" size={14} style={estilos.iconeDica} />
         <Text style={estilos.textoDica}>
           Dica do Bolso: se essa compra exigir muitas horas de trabalho, vale comparar com suas prioridades do mês.
         </Text>
       </View>
     </TelaAplicativo>
   );
-}
-
-function formatarMoeda(valor: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(valor);
 }
 
 const estilos = StyleSheet.create({
@@ -149,9 +146,6 @@ const estilos = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
-  iconeSecundario: {
-    fontSize: 14,
-  },
   rotuloSecundario: {
     fontSize: 10,
     lineHeight: 13,
@@ -204,7 +198,6 @@ const estilos = StyleSheet.create({
     padding: 14,
   },
   iconeDica: {
-    fontSize: 14,
     marginBottom: 8,
   },
   textoDica: {

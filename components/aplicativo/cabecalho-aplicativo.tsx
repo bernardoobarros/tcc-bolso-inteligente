@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useMenuAplicativo } from '@/components/aplicativo/tela-aplicativo';
+
 type PropriedadesCabecalhoAplicativo = {
   titulo?: string;
   subtitulo?: string;
@@ -12,10 +14,12 @@ export function CabecalhoAplicativo({
   subtitulo,
   tituloCentralizado = false,
 }: PropriedadesCabecalhoAplicativo) {
+  const { abrirMenu } = useMenuAplicativo();
+
   return (
     <View style={estilos.container}>
       <View style={estilos.ladoEsquerdo}>
-        <Pressable style={estilos.botaoIcone}>
+        <Pressable onPress={abrirMenu} style={estilos.botaoIcone}>
           <Ionicons color="#6200EE" name="menu" size={18} />
         </Pressable>
         {tituloCentralizado ? null : (

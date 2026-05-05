@@ -1,37 +1,75 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CabecalhoAplicativo } from '@/components/aplicativo/cabecalho-aplicativo';
 import { TelaAplicativo } from '@/components/aplicativo/tela-aplicativo';
+import { useAplicativo } from '@/contextos/aplicativo-contexto';
+import { formatarMoeda } from '@/utils/financeiro';
 
-const categoriasResumo = [
-  { nome: 'Moradia', valor: 'R$ 950,00', cor: '#5B21B6', largura: '78%' as const },
-  { nome: 'Alimentação', valor: 'R$ 420,00', cor: '#8B5CF6', largura: '48%' as const },
-  { nome: 'Transporte', valor: 'R$ 310,00', cor: '#C2410C', largura: '32%' as const },
-  { nome: 'Lazer', valor: 'R$ 210,20', cor: '#52525B', largura: '22%' as const },
-];
+const coresCategorias: Record<string, string> = {
+  Moradia: '#5B21B6',
+  Alimentação: '#8B5CF6',
+  Transporte: '#C2410C',
+  Lazer: '#52525B',
+  Compras: '#2563EB',
+  Outros: '#6B7280',
+};
 
 export default function TelaDashboard() {
+  const { rendas, despesas, reservas, contasPagar } = useAplicativo();
+
+  const totalRendas = useMemo(
+    () => rendas.reduce((total, renda) => total + renda.valorMensal, 0),
+    [rendas],
+  );
+  const totalDespesas = useMemo(
+    () => despesas.reduce((total, despesa) => total + despesa.valor, 0),
+    [despesas],
+  );
+  const totalReservas = useMemo(
+    () => reservas.reduce((total, reserva) => total + reserva.valorAtual, 0),
+    [reservas],
+  );
+  const saldoAtual = totalRendas - totalDespesas;
+
+  const categoriasResumo = useMemo(() => {
+    const totais = despesas.reduce<Record<string, number>>((acumulado, despesa) => {
+      acumulado[despesa.categoria] = (acumulado[despesa.categoria] ?? 0) + despesa.valor;
+      return acumulado;
+    }, {});
+
+    return Object.entries(totais)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([nome, valor]) => ({
+        nome,
+        valor,
+        cor: coresCategorias[nome] ?? '#6B7280',
+        largura: totalDespesas > 0 ? `${Math.max(12, Math.round((valor / totalDespesas) * 100))}%` : '0%',
+      }));
+  }, [despesas, totalDespesas]);
+
   return (
     <TelaAplicativo abaAtiva="dashboard">
       <CabecalhoAplicativo />
 
       <View style={estilos.cartaoSaldo}>
         <Text style={estilos.rotuloSaldo}>SALDO ATUAL</Text>
-        <Text style={estilos.valorMoeda}>R$</Text>
-        <Text style={estilos.valorSaldo}>2.450,00</Text>
+        <Text style={estilos.valorSaldo}>{formatarMoeda(saldoAtual)}</Text>
         <View style={estilos.seloSaldo}>
-          <Text style={estilos.textoSelo}>+12% este mês</Text>
+          <Text style={estilos.textoSelo}>{rendas.length} fontes ativas</Text>
         </View>
       </View>
 
       <View style={estilos.cabecalhoResumo}>
         <Text style={estilos.tituloResumo}>Resumo Mensal</Text>
-        <Text style={estilos.mesResumo}>JULHO 2023</Text>
+        <Text style={estilos.mesResumo}>VISÃO GERAL</Text>
       </View>
 
       <View style={estilos.cartaoResumo}>
-        <Text style={estilos.legendaResumo}>Média de gastos por mês</Text>
-        <Text style={estilos.valorResumo}>R$ 1.890,20</Text>
+        <Text style={estilos.legendaResumo}>Total de despesas registradas</Text>
+        <Text style={estilos.valorResumo}>{formatarMoeda(totalDespesas)}</Text>
 
         <View style={estilos.listaCategorias}>
           {categoriasResumo.map((categoria) => (
@@ -39,7 +77,7 @@ export default function TelaDashboard() {
               <View style={estilos.linhaCategoria}>
                 <View style={[estilos.pontoCategoria, { backgroundColor: categoria.cor }]} />
                 <Text style={estilos.nomeCategoria}>{categoria.nome}</Text>
-                <Text style={estilos.valorCategoria}>{categoria.valor}</Text>
+                <Text style={estilos.valorCategoria}>{formatarMoeda(categoria.valor)}</Text>
               </View>
               <View style={estilos.trilhaCategoria}>
                 <View
@@ -55,28 +93,32 @@ export default function TelaDashboard() {
       </View>
 
       <View style={estilos.gradeCartoes}>
-        <View style={estilos.cartaoInformacao}>
+        <Pressable onPress={() => router.push('/reservas')} style={estilos.cartaoInformacao}>
           <View style={[estilos.iconeInformacao, { backgroundColor: '#F4E8FF' }]}>
             <Text style={estilos.iconeEmoji}>💟</Text>
           </View>
           <View>
             <Text style={estilos.rotuloInformacao}>RESERVAS</Text>
-            <Text style={estilos.valorInformacao}>R$ 12.500</Text>
+            <Text style={estilos.valorInformacao}>{formatarMoeda(totalReservas)}</Text>
           </View>
-        </View>
+        </Pressable>
 
-        <View style={estilos.cartaoInformacao}>
+        <Pressable
+          onPress={() => router.push('/contas-a-pagar')}
+          style={estilos.cartaoInformacao}>
           <View style={[estilos.iconeInformacao, { backgroundColor: '#FFEDEB' }]}>
             <Text style={estilos.iconeEmoji}>🧾</Text>
           </View>
           <View>
             <Text style={estilos.rotuloInformacao}>CONTAS A PAGAR</Text>
-            <Text style={estilos.valorInformacao}>3 pendentes</Text>
+            <Text style={estilos.valorInformacao}>{contasPagar.length} pendentes</Text>
           </View>
-        </View>
+        </Pressable>
       </View>
 
-      <Text style={estilos.linkExtrato}>Ver extrato completo →</Text>
+      <Pressable onPress={() => router.push('/extrato')}>
+        <Text style={estilos.linkExtrato}>Ver extrato completo →</Text>
+      </Pressable>
     </TelaAplicativo>
   );
 }
@@ -102,15 +144,9 @@ const estilos = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginBottom: 8,
   },
-  valorMoeda: {
-    fontSize: 28,
-    lineHeight: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
   valorSaldo: {
-    fontSize: 52,
-    lineHeight: 58,
+    fontSize: 42,
+    lineHeight: 48,
     fontWeight: '800',
     color: '#FFFFFF',
     marginBottom: 12,
@@ -160,8 +196,8 @@ const estilos = StyleSheet.create({
     marginBottom: 6,
   },
   valorResumo: {
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '800',
     color: '#202020',
     marginBottom: 14,

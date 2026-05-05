@@ -1,55 +1,99 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useState } from 'react';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 
 import { CabecalhoAplicativo } from '@/components/aplicativo/cabecalho-aplicativo';
 import { TelaAplicativo } from '@/components/aplicativo/tela-aplicativo';
+import { useAplicativo } from '@/contextos/aplicativo-contexto';
+import { ehMesmoMes, formatarHorario, formatarMesCurto, formatarMoeda, obterRotuloData } from '@/utils/financeiro';
 
-const transacoesHoje = [
-  {
-    titulo: 'Supermercado\nPremium',
-    subtitulo: 'Alimentação • 14:20',
-    valor: '- R$ 450,20',
-    detalhe: 'DÉBITO',
-    cor: '#DC2626',
-    icone: '🛒',
-  },
-  {
-    titulo: 'Salário\nMensal',
-    subtitulo: 'Renda • 09:00',
-    valor: '+ R$ 8.500,00',
-    detalhe: 'TRANSFERÊNCIA',
-    cor: '#6200EE',
-    icone: '💳',
-  },
-];
+type TransacaoExtrato = {
+  id: string;
+  titulo: string;
+  subtitulo: string;
+  valor: number;
+  detalhe: string;
+  tipo: 'entrada' | 'saida';
+  data: number;
+  icone: keyof typeof Ionicons.glyphMap;
+};
 
-const transacoesOntem = [
-  {
-    titulo: 'Posto Ipiranga',
-    subtitulo: 'Transporte • 18:45',
-    valor: '- R$ 280,00',
-    detalhe: 'CARTÃO DE CRÉDITO',
-    cor: '#DC2626',
-    icone: '⛽',
-  },
-  {
-    titulo: 'Restaurante\nSabor',
-    subtitulo: 'Alimentação • 12:30',
-    valor: '- R$ 85,90',
-    detalhe: 'DÉBITO',
-    cor: '#DC2626',
-    icone: '🍴',
-  },
-  {
-    titulo: 'Dividendos\nAções',
-    subtitulo: 'Investimentos • 10:15',
-    valor: '+ R$ 124,50',
-    detalhe: 'RENDIMENTOS',
-    cor: '#6200EE',
-    icone: '📈',
-  },
-];
+const iconesCategoria: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Alimentação: 'restaurant-outline',
+  Transporte: 'bus-outline',
+  Moradia: 'home-outline',
+  Lazer: 'film-outline',
+  Compras: 'bag-handle-outline',
+  Trabalho: 'briefcase-outline',
+  Investimento: 'trending-up-outline',
+  Negócio: 'wallet-outline',
+};
 
 export default function TelaExtrato() {
+  const { rendas, despesas } = useAplicativo();
+  const opcoesMes = useMemo(() => criarOpcoesMes(), []);
+  const [indiceMesSelecionado, setIndiceMesSelecionado] = useState(1);
+
+  const transacoes = useMemo<TransacaoExtrato[]>(() => {
+    const transacoesRenda = rendas.map((renda) => ({
+      id: renda.id,
+      titulo: renda.descricao,
+      subtitulo: `Renda • ${formatarHorario(renda.dataCriacao)}`,
+      valor: renda.valorMensal,
+      detalhe: renda.tipoFonte === 'principal' ? 'RENDA PRINCIPAL' : 'RENDA EXTRA',
+      tipo: 'entrada' as const,
+      data: renda.dataCriacao,
+      icone: iconesCategoria[renda.categoria] ?? 'wallet-outline',
+    }));
+
+    const transacoesDespesa = despesas.map((despesa) => ({
+      id: despesa.id,
+      titulo: despesa.descricao,
+      subtitulo: `${despesa.categoria} • ${formatarHorario(despesa.data)}`,
+      valor: despesa.valor,
+      detalhe: despesa.contaPagamento.toUpperCase(),
+      tipo: 'saida' as const,
+      data: despesa.data,
+      icone: iconesCategoria[despesa.categoria] ?? 'receipt-outline',
+    }));
+
+    return [...transacoesRenda, ...transacoesDespesa].sort((a, b) => b.data - a.data);
+  }, [despesas, rendas]);
+
+  const referenciaMes = opcoesMes[indiceMesSelecionado].data;
+  const transacoesFiltradas = useMemo(
+    () => transacoes.filter((transacao) => ehMesmoMes(transacao.data, referenciaMes)),
+    [referenciaMes, transacoes],
+  );
+
+  const totais = useMemo(() => {
+    const entradas = transacoesFiltradas
+      .filter((transacao) => transacao.tipo === 'entrada')
+      .reduce((total, transacao) => total + transacao.valor, 0);
+    const saidas = transacoesFiltradas
+      .filter((transacao) => transacao.tipo === 'saida')
+      .reduce((total, transacao) => total + transacao.valor, 0);
+
+    return {
+      entradas,
+      saidas,
+      saldo: entradas - saidas,
+    };
+  }, [transacoesFiltradas]);
+
+  const grupos = useMemo(() => {
+    const mapa = new Map<string, TransacaoExtrato[]>();
+
+    transacoesFiltradas.forEach((transacao) => {
+      const chave = obterRotuloData(transacao.data);
+      const grupoAtual = mapa.get(chave) ?? [];
+      grupoAtual.push(transacao);
+      mapa.set(chave, grupoAtual);
+    });
+
+    return Array.from(mapa.entries());
+  }, [transacoesFiltradas]);
+
   return (
     <TelaAplicativo abaAtiva="extrato">
       <CabecalhoAplicativo />
@@ -58,85 +102,100 @@ export default function TelaExtrato() {
       <View style={estilos.linhaTitulo}>
         <Text style={estilos.titulo}>Extrato</Text>
         <View style={estilos.seletorMes}>
-          <View style={estilos.pilulaMes}>
-            <Text style={estilos.textoMes}>Out</Text>
-          </View>
-          <View style={[estilos.pilulaMes, estilos.pilulaMesAtiva]}>
-            <Text style={estilos.textoMesAtivo}>Nov</Text>
-          </View>
-          <View style={estilos.pilulaMes}>
-            <Text style={estilos.textoMes}>Dez</Text>
-          </View>
+          {opcoesMes.map((opcao, indice) => {
+            const estaAtiva = indice === indiceMesSelecionado;
+
+            return (
+              <Pressable
+                key={opcao.rotulo}
+                onPress={() => setIndiceMesSelecionado(indice)}
+                style={[estilos.pilulaMes, estaAtiva && estilos.pilulaMesAtiva]}>
+                <Text style={[estilos.textoMes, estaAtiva && estilos.textoMesAtivo]}>
+                  {opcao.rotulo}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
 
       <View style={estilos.cartaoSaldoBranco}>
         <Text style={estilos.rotuloCartao}>ENTRADAS</Text>
-        <Text style={[estilos.valorCartao, { color: '#6200EE' }]}>R$ 12.450,00</Text>
+        <Text style={[estilos.valorCartao, { color: '#6200EE' }]}>
+          {formatarMoeda(totais.entradas)}
+        </Text>
       </View>
 
       <View style={estilos.cartaoSaldoBranco}>
         <Text style={estilos.rotuloCartao}>SAÍDAS</Text>
-        <Text style={[estilos.valorCartao, { color: '#DC2626' }]}>R$ 4.120,55</Text>
+        <Text style={[estilos.valorCartao, { color: '#DC2626' }]}>
+          {formatarMoeda(totais.saidas)}
+        </Text>
       </View>
 
       <View style={estilos.cartaoSaldoMensal}>
         <Text style={estilos.rotuloCartao}>SALDO MENSAL</Text>
-        <Text style={estilos.valorSaldoMensal}>R$ 8.329,45</Text>
+        <Text style={estilos.valorSaldoMensal}>{formatarMoeda(totais.saldo)}</Text>
         <View style={estilos.linhaRoxa} />
       </View>
 
-      <Text style={estilos.agrupadorData}>HOJE, 24 DE NOVEMBRO</Text>
-      <View style={estilos.grupoLancamentos}>
-        {transacoesHoje.map((transacao) => (
-          <ItemTransacao key={transacao.titulo} {...transacao} />
-        ))}
-      </View>
+      {grupos.map(([rotulo, itens]) => (
+        <View key={rotulo}>
+          <Text style={estilos.agrupadorData}>{rotulo}</Text>
+          <View style={estilos.grupoLancamentos}>
+            {itens.map((transacao) => (
+              <ItemTransacao key={transacao.id} transacao={transacao} />
+            ))}
+          </View>
+        </View>
+      ))}
 
-      <Text style={estilos.agrupadorData}>ONTEM, 23 DE NOVEMBRO</Text>
-      <View style={estilos.grupoLancamentos}>
-        {transacoesOntem.map((transacao) => (
-          <ItemTransacao key={transacao.titulo} {...transacao} />
-        ))}
-      </View>
+      {grupos.length === 0 ? (
+        <View style={estilos.estadoVazio}>
+          <Ionicons color="#6200EE" name="receipt-outline" size={18} />
+          <Text style={estilos.textoEstadoVazio}>Nenhum lançamento encontrado neste mês.</Text>
+        </View>
+      ) : null}
     </TelaAplicativo>
   );
 }
 
-type PropriedadesItemTransacao = {
-  titulo: string;
-  subtitulo: string;
-  valor: string;
-  detalhe: string;
-  cor: string;
-  icone: string;
-};
+function ItemTransacao({ transacao }: { transacao: TransacaoExtrato }) {
+  const corValor = transacao.tipo === 'entrada' ? '#6200EE' : '#DC2626';
+  const prefixo = transacao.tipo === 'entrada' ? '+' : '-';
 
-function ItemTransacao({
-  titulo,
-  subtitulo,
-  valor,
-  detalhe,
-  cor,
-  icone,
-}: PropriedadesItemTransacao) {
   return (
     <View style={estilos.itemTransacao}>
       <View style={estilos.areaEsquerdaTransacao}>
         <View style={estilos.iconeTransacao}>
-          <Text style={estilos.textoIcone}>{icone}</Text>
+          <Ionicons color="#6200EE" name={transacao.icone} size={16} />
         </View>
         <View>
-          <Text style={estilos.tituloTransacao}>{titulo}</Text>
-          <Text style={estilos.subtituloTransacao}>{subtitulo}</Text>
+          <Text style={estilos.tituloTransacao}>{transacao.titulo}</Text>
+          <Text style={estilos.subtituloTransacao}>{transacao.subtitulo}</Text>
         </View>
       </View>
       <View style={estilos.areaDireitaTransacao}>
-        <Text style={[estilos.valorTransacao, { color: cor }]}>{valor}</Text>
-        <Text style={estilos.detalheTransacao}>{detalhe}</Text>
+        <Text style={[estilos.valorTransacao, { color: corValor }]}>
+          {prefixo} {formatarMoeda(transacao.valor)}
+        </Text>
+        <Text style={estilos.detalheTransacao}>{transacao.detalhe}</Text>
       </View>
     </View>
   );
+}
+
+function criarOpcoesMes() {
+  const base = new Date();
+
+  return [-1, 0, 1].map((deslocamento) => {
+    const data = new Date(base.getFullYear(), base.getMonth() + deslocamento, 1);
+
+    return {
+      rotulo: formatarMesCurto(data),
+      data,
+    };
+  });
 }
 
 const estilos = StyleSheet.create({
@@ -181,8 +240,6 @@ const estilos = StyleSheet.create({
     color: '#111827',
   },
   textoMesAtivo: {
-    fontSize: 12,
-    lineHeight: 14,
     color: '#FFFFFF',
     fontWeight: '700',
   },
@@ -277,9 +334,6 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textoIcone: {
-    fontSize: 16,
-  },
   tituloTransacao: {
     fontSize: 15,
     lineHeight: 18,
@@ -295,6 +349,7 @@ const estilos = StyleSheet.create({
   areaDireitaTransacao: {
     alignItems: 'flex-end',
     marginLeft: 10,
+    maxWidth: 120,
   },
   valorTransacao: {
     fontSize: 14,
@@ -307,5 +362,22 @@ const estilos = StyleSheet.create({
     lineHeight: 12,
     color: '#71717A',
     marginTop: 4,
+    textAlign: 'right',
+  },
+  estadoVazio: {
+    minHeight: 52,
+    borderRadius: 18,
+    backgroundColor: '#F5EEFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  textoEstadoVazio: {
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: '600',
+    color: '#6200EE',
   },
 });

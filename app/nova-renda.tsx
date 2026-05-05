@@ -1,24 +1,61 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const categorias = ['Trabalho', 'Investimento', 'Negócio', 'Outros'] as const;
+import { useAplicativo } from '@/contextos/aplicativo-contexto';
+import type { CategoriaRenda } from '@/tipos/aplicativo';
+import { converterTextoEmValor, formatarMoeda } from '@/utils/financeiro';
+
+const categorias: CategoriaRenda[] = ['Trabalho', 'Investimento', 'Negócio', 'Outros'];
+
+type ErrosFormulario = {
+  valor?: string;
+  descricao?: string;
+};
 
 export default function TelaNovaRenda() {
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState<(typeof categorias)[number]>('Trabalho');
+  const { adicionarRenda } = useAplicativo();
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<CategoriaRenda>('Trabalho');
+  const [valorTexto, setValorTexto] = useState('');
+  const [descricao, setDescricao] = useState('');
+  const [erros, setErros] = useState<ErrosFormulario>({});
+
+  const valorNumerico = useMemo(() => converterTextoEmValor(valorTexto), [valorTexto]);
+
+  function salvarRenda() {
+    const novosErros: ErrosFormulario = {};
+
+    if (valorNumerico <= 0) {
+      novosErros.valor = 'Informe um valor mensal maior que zero.';
+    }
+
+    if (descricao.trim().length < 3) {
+      novosErros.descricao = 'Descreva a fonte de renda com pelo menos 3 caracteres.';
+    }
+
+    setErros(novosErros);
+
+    if (Object.keys(novosErros).length > 0) {
+      return;
+    }
+
+    adicionarRenda({
+      descricao: descricao.trim(),
+      categoria: categoriaSelecionada,
+      valorMensal: valorNumerico,
+    });
+
+    router.back();
+  }
 
   return (
-    <SafeAreaView style={estilos.areaSegura}>
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+    <SafeAreaView edges={['top', 'bottom']} style={estilos.areaSegura}>
+      <ScrollView
+        contentContainerStyle={estilos.conteudo}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <View style={estilos.cabecalho}>
           <Pressable onPress={() => router.back()} style={estilos.botaoVoltar}>
             <Ionicons color="#202020" name="close" size={18} />
@@ -36,17 +73,26 @@ export default function TelaNovaRenda() {
           <Text style={estilos.subtitulo}>Registre sua nova fonte de renda mensal.</Text>
 
           <Text style={estilos.rotuloCampo}>VALOR MENSAL</Text>
-          <View style={estilos.linhaValor}>
-            <Text style={estilos.moeda}>R$</Text>
-            <Text style={estilos.valorGrande}>0,00</Text>
-          </View>
+          <TextInput
+            keyboardType="decimal-pad"
+            onChangeText={setValorTexto}
+            placeholder="0,00"
+            placeholderTextColor="#9CA3AF"
+            style={[estilos.campoTexto, erros.valor && estilos.campoComErro]}
+            value={valorTexto}
+          />
+          <Text style={estilos.valorCalculado}>{formatarMoeda(valorNumerico || 0)}</Text>
+          {erros.valor ? <Text style={estilos.textoErro}>{erros.valor}</Text> : null}
 
           <Text style={estilos.rotuloCampo}>DESCRIÇÃO</Text>
           <TextInput
-            placeholder="Ex: Salário Mensal, Freelance UX"
+            onChangeText={setDescricao}
+            placeholder="Ex: Salário mensal, consultoria, aluguel"
             placeholderTextColor="#9CA3AF"
-            style={estilos.campoTexto}
+            style={[estilos.campoTexto, erros.descricao && estilos.campoComErro]}
+            value={descricao}
           />
+          {erros.descricao ? <Text style={estilos.textoErro}>{erros.descricao}</Text> : null}
 
           <Text style={estilos.rotuloCampo}>CATEGORIA</Text>
           <View style={estilos.gradeCategorias}>
@@ -57,15 +103,9 @@ export default function TelaNovaRenda() {
                 <Pressable
                   key={categoria}
                   onPress={() => setCategoriaSelecionada(categoria)}
-                  style={[
-                    estilos.botaoCategoria,
-                    estaAtiva && estilos.botaoCategoriaAtivo,
-                  ]}>
+                  style={[estilos.botaoCategoria, estaAtiva && estilos.botaoCategoriaAtivo]}>
                   <Text
-                    style={[
-                      estilos.textoCategoria,
-                      estaAtiva && estilos.textoCategoriaAtivo,
-                    ]}>
+                    style={[estilos.textoCategoria, estaAtiva && estilos.textoCategoriaAtivo]}>
                     {categoria}
                   </Text>
                 </Pressable>
@@ -73,12 +113,12 @@ export default function TelaNovaRenda() {
             })}
           </View>
 
-          <Pressable style={estilos.botaoConfirmar}>
+          <Pressable onPress={salvarRenda} style={estilos.botaoConfirmar}>
             <Text style={estilos.textoBotaoConfirmar}>Confirmar Renda</Text>
           </Pressable>
 
           <Text style={estilos.textoAuxiliar}>
-            Este valor será adicionado ao seu saldo do app ao confirmar o seu lançamento de renda.
+            Esta renda entra na área de fontes e atualiza o saldo do dashboard automaticamente.
           </Text>
         </View>
 
@@ -89,7 +129,7 @@ export default function TelaNovaRenda() {
           <View style={estilos.areaTextoDica}>
             <Text style={estilos.tituloDica}>Dica do Bolso</Text>
             <Text style={estilos.textoDica}>
-              Ao registrar rendas variáveis regularmente, o app consegue te ajudar a perceber melhor sua capacidade de poupança no final do mês.
+              Registre rendas variáveis sempre com a mesma descrição para acompanhar sua evolução.
             </Text>
           </View>
         </View>
@@ -104,9 +144,10 @@ const estilos = StyleSheet.create({
     backgroundColor: '#F9F9FB',
   },
   conteudo: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: 32,
+    flexGrow: 1,
   },
   cabecalho: {
     flexDirection: 'row',
@@ -170,24 +211,6 @@ const estilos = StyleSheet.create({
     color: '#71717A',
     marginBottom: 8,
   },
-  linhaValor: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    marginBottom: 18,
-  },
-  moeda: {
-    fontSize: 28,
-    lineHeight: 32,
-    fontWeight: '700',
-    color: '#6200EE',
-  },
-  valorGrande: {
-    fontSize: 42,
-    lineHeight: 46,
-    fontWeight: '800',
-    color: '#D4D4D8',
-  },
   campoTexto: {
     minHeight: 48,
     borderRadius: 10,
@@ -196,7 +219,24 @@ const estilos = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 13,
     color: '#202020',
-    marginBottom: 18,
+    marginBottom: 6,
+  },
+  campoComErro: {
+    borderWidth: 1,
+    borderColor: '#DC2626',
+  },
+  valorCalculado: {
+    fontSize: 28,
+    lineHeight: 32,
+    fontWeight: '800',
+    color: '#6200EE',
+    marginBottom: 8,
+  },
+  textoErro: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#DC2626',
+    marginBottom: 12,
   },
   gradeCategorias: {
     flexDirection: 'row',

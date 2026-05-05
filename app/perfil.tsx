@@ -1,70 +1,75 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { TelaAplicativo } from "@/components/aplicativo/tela-aplicativo";
+import { TelaAplicativo, useMenuAplicativo } from '@/components/aplicativo/tela-aplicativo';
+import { useAplicativo } from '@/contextos/aplicativo-contexto';
 
 export default function TelaPerfil() {
+  const { usuario } = useAplicativo();
+
   return (
-    <TelaAplicativo abaAtiva="perfil" rolavel={false}>
-      <View style={estilos.cabecalho}>
-        <Pressable style={estilos.botaoTopo}>
-          <Ionicons color="#6200EE" name="menu" size={18} />
-        </Pressable>
-        <Text style={estilos.tituloCabecalho}>PERFIL</Text>
-        <Pressable style={estilos.botaoTopo}>
-          <Ionicons color="#6200EE" name="settings-outline" size={18} />
-        </Pressable>
+    <TelaAplicativo abaAtiva="perfil">
+      <CabecalhoPerfil />
+
+      <View style={estilos.blocoUsuario}>
+        <View style={estilos.avatar}>
+          <View style={estilos.botaoLapis}>
+            <Ionicons color="#FFFFFF" name="pencil" size={10} />
+          </View>
+        </View>
+        <Text style={estilos.nome}>{usuario.nome}</Text>
+        <Text style={estilos.email}>{usuario.email}</Text>
       </View>
 
-      <View style={estilos.container}>
-        <View style={estilos.blocoUsuario}>
-          <View style={estilos.avatar}>
-            <View style={estilos.botaoLapis}>
-              <Ionicons color="#FFFFFF" name="pencil" size={10} />
-            </View>
-          </View>
-          <Text style={estilos.nome}>Bernardo Barros</Text>
-          <Text style={estilos.email}>exemplo@email.com</Text>
-        </View>
-
-        <Text style={estilos.rotuloSecao}>CONFIGURAÇÕES DE CONTA</Text>
-        <View style={estilos.cartaoSecao}>
-          <ItemPerfil icone="person-outline" titulo="Informações Pessoais" />
-          <ItemPerfil icone="shield-checkmark-outline" titulo="Segurança" />
-          <ItemPerfil icone="notifications-outline" titulo="Notificações" />
-        </View>
-
-        <Text style={estilos.rotuloSecao}>PREFERÊNCIAS DO APP</Text>
-        <View style={estilos.cartaoSecao}>
-          <ItemPerfil
-            destaqueDireita="Português (BR)"
-            icone="globe-outline"
-            titulo="Idioma"
-          />
-          <ItemSwitch titulo="Modo Escuro" />
-          <ItemPerfil icone="color-palette-outline" titulo="Aparência" />
-        </View>
-
-        <Text style={estilos.rotuloSecao}>SUPORTE</Text>
-        <View style={estilos.linhaSuporte}>
-          <CartaoSuporte icone="help-circle-outline" titulo="AJUDA" />
-          <CartaoSuporte icone="mail-outline" titulo="CONTATO" />
-        </View>
-
-        <Pressable style={estilos.botaoTermos}>
-          <View style={estilos.iconeTermos}>
-            <Ionicons color="#6200EE" name="document-text-outline" size={16} />
-          </View>
-          <Text style={estilos.textoTermos}>TERMOS E PRIVACIDADE</Text>
-          <Ionicons color="#A1A1AA" name="open-outline" size={14} />
-        </Pressable>
-
-        <Pressable style={estilos.botaoSair}>
-          <Ionicons color="#DC2626" name="log-out-outline" size={16} />
-          <Text style={estilos.textoSair}>Sair da Conta</Text>
-        </Pressable>
+      <Text style={estilos.rotuloSecao}>CONFIGURAÇÕES DE CONTA</Text>
+      <View style={estilos.cartaoSecao}>
+        <ItemPerfil icone="person-outline" titulo="Informações Pessoais" />
+        <ItemPerfil icone="shield-checkmark-outline" titulo="Segurança" />
+        <ItemPerfil icone="notifications-outline" titulo="Notificações" />
       </View>
+
+      <Text style={estilos.rotuloSecao}>PREFERÊNCIAS DO APP</Text>
+      <View style={estilos.cartaoSecao}>
+        <ItemPerfil destaqueDireita="Português (BR)" icone="globe-outline" titulo="Idioma" />
+        <ItemSwitch titulo="Modo Escuro" />
+        <ItemPerfil icone="color-palette-outline" titulo="Aparência" />
+      </View>
+
+      <Text style={estilos.rotuloSecao}>SUPORTE</Text>
+      <View style={estilos.linhaSuporte}>
+        <CartaoSuporte icone="help-circle-outline" titulo="AJUDA" />
+        <CartaoSuporte icone="mail-outline" titulo="CONTATO" />
+      </View>
+
+      <Pressable style={estilos.botaoTermos}>
+        <View style={estilos.iconeTermos}>
+          <Ionicons color="#6200EE" name="document-text-outline" size={16} />
+        </View>
+        <Text style={estilos.textoTermos}>TERMOS E PRIVACIDADE</Text>
+        <Ionicons color="#A1A1AA" name="open-outline" size={14} />
+      </Pressable>
+
+      <Pressable style={estilos.botaoSair}>
+        <Ionicons color="#DC2626" name="log-out-outline" size={16} />
+        <Text style={estilos.textoSair}>Sair da Conta</Text>
+      </Pressable>
     </TelaAplicativo>
+  );
+}
+
+function CabecalhoPerfil() {
+  const { abrirMenu } = useMenuAplicativo();
+
+  return (
+    <View style={estilos.cabecalho}>
+      <Pressable onPress={abrirMenu} style={estilos.botaoTopo}>
+        <Ionicons color="#6200EE" name="menu" size={18} />
+      </Pressable>
+      <Text style={estilos.tituloCabecalho}>PERFIL</Text>
+      <Pressable style={estilos.botaoTopo}>
+        <Ionicons color="#6200EE" name="settings-outline" size={18} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -74,11 +79,7 @@ type PropriedadesItemPerfil = {
   destaqueDireita?: string;
 };
 
-function ItemPerfil({
-  icone,
-  titulo,
-  destaqueDireita,
-}: PropriedadesItemPerfil) {
+function ItemPerfil({ icone, titulo, destaqueDireita }: PropriedadesItemPerfil) {
   return (
     <Pressable style={estilos.itemLinha}>
       <View style={estilos.areaLinhaEsquerda}>
@@ -88,9 +89,7 @@ function ItemPerfil({
         <Text style={estilos.tituloLinha}>{titulo}</Text>
       </View>
       <View style={estilos.areaLinhaDireita}>
-        {destaqueDireita ? (
-          <Text style={estilos.textoDestaqueDireita}>{destaqueDireita}</Text>
-        ) : null}
+        {destaqueDireita ? <Text style={estilos.textoDestaqueDireita}>{destaqueDireita}</Text> : null}
         <Ionicons color="#D4D4D8" name="chevron-forward" size={16} />
       </View>
     </Pressable>
@@ -109,7 +108,7 @@ function ItemSwitch({ titulo }: { titulo: string }) {
       <Switch
         ios_backgroundColor="#E5E7EB"
         thumbColor="#FFFFFF"
-        trackColor={{ false: "#E5E7EB", true: "#C4B5FD" }}
+        trackColor={{ false: '#E5E7EB', true: '#C4B5FD' }}
         value={false}
       />
     </View>
@@ -133,76 +132,73 @@ function CartaoSuporte({
 
 const estilos = StyleSheet.create({
   cabecalho: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 18,
   },
   botaoTopo: {
     width: 28,
     height: 28,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tituloCabecalho: {
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: "700",
-    color: "#202020",
-  },
-  container: {
-    flex: 1,
+    fontWeight: '700',
+    color: '#202020',
   },
   blocoUsuario: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 18,
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: 999,
-    backgroundColor: "#6200EE",
+    backgroundColor: '#6200EE',
     marginBottom: 12,
   },
   botaoLapis: {
-    position: "absolute",
+    position: 'absolute',
     right: 0,
     bottom: 2,
     width: 20,
     height: 20,
     borderRadius: 999,
-    backgroundColor: "#5B21B6",
+    backgroundColor: '#5B21B6',
     borderWidth: 2,
-    borderColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nome: {
     fontSize: 18,
     lineHeight: 22,
-    fontWeight: "800",
-    color: "#202020",
+    fontWeight: '800',
+    color: '#202020',
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
     lineHeight: 18,
-    color: "#71717A",
+    color: '#71717A',
   },
   rotuloSecao: {
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 0.8,
-    color: "#71717A",
+    color: '#71717A',
     marginBottom: 10,
     marginTop: 8,
   },
   cartaoSecao: {
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: "#111827",
+    shadowColor: '#111827',
     shadowOpacity: 0.05,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -211,19 +207,19 @@ const estilos = StyleSheet.create({
   },
   itemLinha: {
     minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   areaLinhaEsquerda: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
     flex: 1,
   },
   areaLinhaDireita: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginLeft: 8,
   },
@@ -231,77 +227,77 @@ const estilos = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 999,
-    backgroundColor: "#F3E8FF",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#F3E8FF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tituloLinha: {
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: "600",
-    color: "#202020",
+    fontWeight: '600',
+    color: '#202020',
   },
   textoDestaqueDireita: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: "600",
-    color: "#6200EE",
+    fontWeight: '600',
+    color: '#6200EE',
   },
   linhaSuporte: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
   },
   cartaoSuporte: {
     flex: 1,
     borderRadius: 16,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: '#F3F4F6',
     minHeight: 64,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
   },
   tituloSuporte: {
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: "700",
-    color: "#202020",
+    fontWeight: '700',
+    color: '#202020',
   },
   botaoTermos: {
     minHeight: 44,
     borderRadius: 16,
-    backgroundColor: "#F3F4F6",
-    flexDirection: "row",
-    alignItems: "center",
+    backgroundColor: '#F3F4F6',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     gap: 8,
     marginBottom: 16,
   },
   iconeTermos: {
     width: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
   textoTermos: {
     flex: 1,
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: "700",
-    color: "#202020",
+    fontWeight: '700',
+    color: '#202020',
   },
   botaoSair: {
     minHeight: 50,
     borderRadius: 16,
-    backgroundColor: "#FEE2E2",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FEE2E2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    marginTop: "auto",
+    marginBottom: 8,
   },
   textoSair: {
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: "700",
-    color: "#DC2626",
+    fontWeight: '700',
+    color: '#DC2626',
   },
 });

@@ -1,22 +1,18 @@
+import { Ionicons } from '@expo/vector-icons';
 import { type Href, router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CabecalhoAplicativo } from '@/components/aplicativo/cabecalho-aplicativo';
 import { TelaAplicativo } from '@/components/aplicativo/tela-aplicativo';
+import { converterTextoEmValor } from '@/utils/financeiro';
 
 export default function TelaTempo() {
   const [valorProduto, setValorProduto] = useState('');
   const [valorHora, setValorHora] = useState('');
 
-  const valorProdutoNumerico = useMemo(
-    () => converterTextoEmValor(valorProduto),
-    [valorProduto],
-  );
-  const valorHoraNumerico = useMemo(
-    () => converterTextoEmValor(valorHora),
-    [valorHora],
-  );
+  const valorProdutoNumerico = useMemo(() => converterTextoEmValor(valorProduto), [valorProduto]);
+  const valorHoraNumerico = useMemo(() => converterTextoEmValor(valorHora), [valorHora]);
   const calculoDisponivel = valorProdutoNumerico > 0 && valorHoraNumerico > 0;
 
   function calcularTempo() {
@@ -38,7 +34,7 @@ export default function TelaTempo() {
       <CabecalhoAplicativo titulo="Quanto custa em horas?" tituloCentralizado />
 
       <View style={estilos.iconePrincipal}>
-        <Text style={estilos.emojiRelogio}>🕒</Text>
+        <Ionicons color="#6200EE" name="time-outline" size={24} />
       </View>
 
       <Text style={estilos.titulo}>Pense em tempo, não em dinheiro.</Text>
@@ -89,7 +85,7 @@ export default function TelaTempo() {
       </View>
 
       <View style={estilos.cartaoDica}>
-        <Text style={estilos.iconeCartao}>💡</Text>
+        <Ionicons color="#6200EE" name="bulb-outline" size={14} style={estilos.iconeCartao} />
         <Text style={estilos.tituloCartaoClaro}>Dica Financeira</Text>
         <Text style={estilos.textoCartaoClaro}>
           Se o produto custar mais de 20 horas de trabalho, reflita por 48 horas antes de comprar.
@@ -97,28 +93,18 @@ export default function TelaTempo() {
       </View>
 
       <View style={estilos.cartaoRoxo}>
-        <Text style={estilos.iconeCartaoRoxo}>↗</Text>
+        <Ionicons color="#FFFFFF" name="trending-up-outline" size={16} style={estilos.iconeCartaoRoxo} />
         <Text style={estilos.tituloCartaoRoxo}>Meta de Carreira</Text>
         <Text style={estilos.textoCartaoRoxo}>
-          Aumentar o valor da sua hora em 15% este ano reduzirá seu esforço de compra significativamente.
+          Aumentar o valor da sua hora reduz diretamente o esforço necessário para futuras compras.
         </Text>
       </View>
 
       <View style={estilos.imagemDecorativa}>
-        <Text style={estilos.moedas}>🪙 🪙 🪙</Text>
+        <Ionicons color="#FFFFFF" name="cash-outline" size={32} />
       </View>
     </TelaAplicativo>
   );
-}
-
-function converterTextoEmValor(texto: string) {
-  const textoLimpo = texto
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
-  const valor = Number(textoLimpo);
-
-  return Number.isFinite(valor) ? valor : 0;
 }
 
 const estilos = StyleSheet.create({
@@ -132,9 +118,6 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
     marginBottom: 18,
-  },
-  emojiRelogio: {
-    fontSize: 24,
   },
   titulo: {
     fontSize: 26,
@@ -226,7 +209,6 @@ const estilos = StyleSheet.create({
     marginBottom: 16,
   },
   iconeCartao: {
-    fontSize: 14,
     marginBottom: 8,
   },
   tituloCartaoClaro: {
@@ -248,8 +230,6 @@ const estilos = StyleSheet.create({
     marginBottom: 38,
   },
   iconeCartaoRoxo: {
-    fontSize: 16,
-    color: '#FFFFFF',
     marginBottom: 8,
   },
   tituloCartaoRoxo: {
@@ -271,9 +251,5 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-  },
-  moedas: {
-    fontSize: 26,
-    opacity: 0.75,
   },
 });
