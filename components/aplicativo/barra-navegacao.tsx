@@ -150,7 +150,7 @@ function ItemBarra({ item, abaAtiva }: PropriedadesItemBarra) {
   const estaAtivo = item.chave === abaAtiva;
 
   return (
-    <Pressable onPress={() => router.replace(item.rota)} style={estilos.item}>
+    <Pressable onPress={() => router.navigate(item.rota)} style={estilos.item}>
       <Ionicons color={estaAtivo ? '#6200EE' : '#9CA3AF'} name={item.icone} size={18} />
       <Text style={[estilos.rotulo, estaAtivo && estilos.rotuloAtivo]}>{item.rotulo}</Text>
     </Pressable>

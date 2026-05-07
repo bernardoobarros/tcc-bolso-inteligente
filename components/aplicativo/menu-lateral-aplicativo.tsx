@@ -21,6 +21,16 @@ const itensMenu: ItemMenu[] = [
   { rotulo: 'Configurações', icone: 'settings-outline', rota: '/perfil' },
 ];
 
+const rotasRelacionadas: Record<string, string[]> = {
+  '/dashboard': ['/dashboard'],
+  '/extrato': ['/extrato'],
+  '/fontes-renda': ['/fontes-renda'],
+  '/reservas': ['/reservas', '/nova-reserva'],
+  '/contas-a-pagar': ['/contas-a-pagar'],
+  '/tempo': ['/tempo', '/resultado-tempo'],
+  '/perfil': ['/perfil'],
+};
+
 type PropriedadesMenuLateralAplicativo = {
   visivel: boolean;
   aoFechar: () => void;
@@ -36,7 +46,7 @@ export function MenuLateralAplicativo({
 
   function navegarPara(rota: Href) {
     aoFechar();
-    router.replace(rota);
+    router.navigate(rota);
   }
 
   return (
@@ -64,7 +74,7 @@ export function MenuLateralAplicativo({
 
           <View style={estilos.listaItens}>
             {itensMenu.map((item) => {
-              const estaAtivo = pathname === item.rota;
+              const estaAtivo = (rotasRelacionadas[item.rota] ?? [item.rota]).includes(pathname);
 
               return (
                 <Pressable

@@ -11,8 +11,14 @@ export default function TelaTempo() {
   const [valorProduto, setValorProduto] = useState('');
   const [valorHora, setValorHora] = useState('');
 
-  const valorProdutoNumerico = useMemo(() => converterTextoEmValor(valorProduto), [valorProduto]);
-  const valorHoraNumerico = useMemo(() => converterTextoEmValor(valorHora), [valorHora]);
+  const valorProdutoNumerico = useMemo(
+    () => converterTextoEmValor(valorProduto),
+    [valorProduto],
+  );
+  const valorHoraNumerico = useMemo(
+    () => converterTextoEmValor(valorHora),
+    [valorHora],
+  );
   const calculoDisponivel = valorProdutoNumerico > 0 && valorHoraNumerico > 0;
 
   function calcularTempo() {
@@ -20,13 +26,13 @@ export default function TelaTempo() {
       return;
     }
 
-    router.push({
-      pathname: '/resultado-tempo' as Href,
-      params: {
-        valorProduto: String(valorProdutoNumerico),
-        valorHora: String(valorHoraNumerico),
-      },
+    const parametros = new URLSearchParams({
+      valorProduto: String(valorProdutoNumerico),
+      valorHora: String(valorHoraNumerico),
     });
+    const rotaResultado = `/resultado-tempo?${parametros.toString()}` as Href;
+
+    router.push(rotaResultado);
   }
 
   return (
@@ -85,7 +91,12 @@ export default function TelaTempo() {
       </View>
 
       <View style={estilos.cartaoDica}>
-        <Ionicons color="#6200EE" name="bulb-outline" size={14} style={estilos.iconeCartao} />
+        <Ionicons
+          color="#6200EE"
+          name="bulb-outline"
+          size={14}
+          style={estilos.iconeCartao}
+        />
         <Text style={estilos.tituloCartaoClaro}>Dica Financeira</Text>
         <Text style={estilos.textoCartaoClaro}>
           Se o produto custar mais de 20 horas de trabalho, reflita por 48 horas antes de comprar.
@@ -93,7 +104,12 @@ export default function TelaTempo() {
       </View>
 
       <View style={estilos.cartaoRoxo}>
-        <Ionicons color="#FFFFFF" name="trending-up-outline" size={16} style={estilos.iconeCartaoRoxo} />
+        <Ionicons
+          color="#FFFFFF"
+          name="trending-up-outline"
+          size={16}
+          style={estilos.iconeCartaoRoxo}
+        />
         <Text style={estilos.tituloCartaoRoxo}>Meta de Carreira</Text>
         <Text style={estilos.textoCartaoRoxo}>
           Aumentar o valor da sua hora reduz diretamente o esforço necessário para futuras compras.

@@ -11,10 +11,7 @@ export default function RootLayout() {
         <Stack.Screen name="boas-vindas" />
         <Stack.Screen name="entrar" />
         <Stack.Screen name="cadastro" />
-        <Stack.Screen name="dashboard" />
-        <Stack.Screen name="extrato" />
-        <Stack.Screen name="tempo" />
-        <Stack.Screen name="perfil" />
+        <Stack.Screen name="(abas)" />
         <Stack.Screen name="nova-renda" />
         <Stack.Screen name="nova-despesa" />
         <Stack.Screen name="nova-reserva" />

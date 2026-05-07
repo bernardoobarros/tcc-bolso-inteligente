@@ -19,7 +19,7 @@ export function CabecalhoAplicativo({
   return (
     <View style={estilos.container}>
       <View style={estilos.ladoEsquerdo}>
-        <Pressable onPress={abrirMenu} style={estilos.botaoIcone}>
+        <Pressable hitSlop={8} onPress={abrirMenu} style={estilos.botaoIcone}>
           <Ionicons color="#6200EE" name="menu" size={18} />
         </Pressable>
         {tituloCentralizado ? null : (
@@ -28,7 +28,9 @@ export function CabecalhoAplicativo({
       </View>
 
       {tituloCentralizado && titulo ? (
-        <Text style={estilos.tituloCentralizado}>{titulo}</Text>
+        <View pointerEvents="none" style={estilos.areaTituloCentralizado}>
+          <Text style={estilos.tituloCentralizado}>{titulo}</Text>
+        </View>
       ) : null}
 
       <View style={estilos.ladoDireito}>
@@ -48,6 +50,7 @@ export function CabecalhoAplicativo({
 
 const estilos = StyleSheet.create({
   container: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -57,15 +60,25 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    zIndex: 1,
   },
   ladoDireito: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    zIndex: 1,
   },
   botaoIcone: {
-    width: 24,
-    height: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  areaTituloCentralizado: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -76,14 +89,11 @@ const estilos = StyleSheet.create({
     color: '#111827',
   },
   tituloCentralizado: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '700',
     color: '#6200EE',
+    textAlign: 'center',
   },
   subtitulo: {
     fontSize: 12,

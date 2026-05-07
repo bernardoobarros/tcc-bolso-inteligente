@@ -65,7 +65,7 @@ export default function TelaBoasVindas() {
 
         <View style={estilos.secaoAcoes}>
           <Pressable
-            onPress={() => router.push("/entrar")}
+            onPress={() => router.replace("/entrar")}
             style={estilos.botaoPrimario}
           >
             <Text style={estilos.textoBotaoPrimario}>Começar agora</Text>
@@ -73,7 +73,7 @@ export default function TelaBoasVindas() {
           </Pressable>
 
           <Pressable
-            onPress={() => router.push("/entrar")}
+            onPress={() => router.replace("/entrar")}
             style={estilos.linkSecundario}
           >
             <Text style={estilos.textoLinkSecundario}>Já tenho conta</Text>
